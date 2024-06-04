@@ -146,8 +146,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Consulta datos del paciente por Numero de Identificacion
     document.getElementById('searchButton').addEventListener('click', function() {
-        const patientDNIConsult = document.getElementById('patientDNIConsult').value;
-    
+        let patientDNIConsult = document.getElementById('patientDNIConsult').value.trim();
+
+        if (patientDNIConsult === '') {
+            alert('Por favor, ingrese un número de identificación válido.');
+            return;
+        }
+
         // Realizar la solicitud al servidor con el número de identificación como parámetro de búsqueda
         fetch(`http://localhost:8080/fhir/Patient?identifier=${patientDNIConsult}`)
             .then(response => {
@@ -161,11 +166,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 displayPatientInfo(data);
             })
             .catch(error => {
-                console.error('Error al consultar los datos del paciente:', error);
+                //console.error('Error al consultar los datos del paciente:', error);
                 // Mostrar un mensaje de error al usuario
-                displayErrorMessage('Error al consultar los datos del paciente');
+                alert("Identificación no registrada!");
+                // Ocultar la sección de detalles del paciente en caso de error
+                document.getElementById('patientDetails').classList.add('d-none');
+                document.getElementById('editPatientFormContainer').classList.add('d-none');
+                document.getElementById('patientDNIConsult').value = '';
             });
     });
+
     
     function displayPatientInfo(patientData) {
         const patientInfoDiv = document.getElementById('patientInfo');
@@ -209,16 +219,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p><strong>Zona Territorial:</strong> ${patientZonaTerritorial ? patientZonaTerritorial : 'No especificado'}</p>
                         <p><strong>Entidad Respondiente:</strong> ${patientEntidadRespondiente ? patientEntidadRespondiente : 'No especificado'}</p>
                     </div>
-                </div>
-            `;
+                    <button type="button" class="btn btn-primary" id="editHistoryButton">Editar historia</button>
+                    </div>
+                `;
+                patientInfoDiv.innerHTML += patientDetailsHTML;
+            }
 
-            patientInfoDiv.innerHTML += patientDetailsHTML;
-        }
-    
-        // Mostrar la sección de detalles del paciente
-        document.getElementById('patientDetails').classList.remove('d-none');
+            // Mostrar la sección de detalles del paciente
+            document.getElementById('patientDetails').classList.remove('d-none');
+
+            // Agregar el evento de escucha al botón de editar historia
+            document.getElementById('editHistoryButton').addEventListener('click', function() {
+                document.getElementById('editPatientFormContainer').classList.remove('d-none');
+            });
     }
-    
+  
     function getExtensionValue(patient, url) {
         const extension = patient.resource.extension.find(ext => ext.url === url);
         return extension ? extension.valueString : undefined;
@@ -229,16 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return extension && extension.valueAddress ? extension.valueAddress[field] : undefined;
     }
     
+   
     
-    
-    
-    
-    function displayErrorMessage(message) {
-        const patientInfoDiv = document.getElementById('patientInfo');
-        patientInfoDiv.innerHTML = `<p class="text-danger">${message}</p>`;
-    
-        // Ocultar la sección de detalles del paciente en caso de error
-        document.getElementById('patientDetails').classList.add('d-none');
-    }
     
 });
