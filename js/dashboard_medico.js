@@ -179,6 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayPatientInfo(patientData) {
         const patientInfoDiv = document.getElementById('patientInfo');
+        const observationContainer = document.getElementById('patientObservations');
+
         patientInfoDiv.innerHTML = '';
     
         for (const patient of patientData.entry) {
@@ -223,6 +225,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 patientInfoDiv.innerHTML += patientDetailsHTML;
+
+                // Mostrar las observaciones del paciente
+                displayObservations(patient.resource.id);
             }
 
             // Mostrar la sección de detalles del paciente
@@ -244,7 +249,140 @@ document.addEventListener('DOMContentLoaded', function() {
         return extension && extension.valueAddress ? extension.valueAddress[field] : undefined;
     }
     
-   
+    // Función para enviar datos actualizados al servidor FHIR
+
+    document.getElementById('editPatientForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
     
+        // Obtener el número de identificación del paciente
+        const patientDNIConsult = document.getElementById('patientDNIConsult').value.trim();
     
+        // Verificar que el campo de número de identificación no esté vacío
+        if (!patientDNIConsult) {
+            alert('Por favor, ingrese el número de identificación del paciente.');
+            return;
+        }
+    
+        // Obtener el valor de la observación
+        const observationText = document.getElementById('observationPatient').value.trim();
+    
+        // Verificar que el campo de observación no esté vacío
+        if (!observationText) {
+            alert('Por favor, ingrese una observación.');
+            return;
+        }
+    
+        // Crear un objeto FHIR Observation
+        const observation = {
+            resourceType: 'Observation',
+            status: 'final',
+            code: {
+                coding: [{
+                    system: 'http://loinc.org',
+                    code: '34109-9',
+                    display: 'Note'
+                }]
+            },
+            subject: {
+                reference: `Patient?identifier=${patientDNIConsult}` // Utilizar el número de identificación del paciente
+            },
+            valueString: observationText
+        };
+    
+        // Enviar el objeto Observation al servidor FHIR
+        try {
+            const response = await fetch('http://localhost:8080/fhir/Observation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/fhir+json'
+                },
+                body: JSON.stringify(observation)
+            });
+    
+            if (response.ok) {
+                console.log('Observation created:', observation);
+                alert('La observación se ha guardado correctamente.');
+            } else {
+                console.error('Error creating Observation:', response);
+                alert('Ha ocurrido un error al guardar la observación.');
+            }
+        } catch (error) {
+            console.error('Error creating Observation:', error);
+            alert('Ha ocurrido un error al guardar la observación.');
+        }
+    });
+
+
+    function displayObservations(patientId) {
+        fetch(`http://localhost:8080/fhir/Observation?subject=Patient/${patientId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('La solicitud no fue exitosa');
+                }
+                return response.json();
+            })
+            .then(observationData => {
+                // Obtener el contenedor donde se mostrarán las observaciones
+                const observationContainer = document.getElementById('observationContainer');
+                // Limpiar el contenido anterior
+                observationContainer.innerHTML = '';
+    
+                // Verificar si la respuesta contiene observaciones
+            if (observationData.entry && observationData.entry.length > 0) {
+                // Iterar sobre las observaciones y mostrarlas en la interfaz de usuario
+                observationData.entry.forEach(observationEntry => {
+                    const observation = observationEntry.resource;
+                    const observationText = observation.valueString;
+                    let observationDate = '';
+
+                    // Verificar si la observación tiene una fecha efectiva (effectiveDateTime)
+                    if (observation.effectiveDateTime) {
+                        observationDate = new Date(observation.effectiveDateTime).toLocaleDateString();
+                    }
+                    // Si no hay fecha efectiva, verificar si tiene una fecha de emisión (issued)
+                    else if (observation.issued) {
+                        observationDate = new Date(observation.issued).toLocaleDateString();
+                    }
+                    // Si no hay fecha efectiva ni fecha de emisión, asignar la fecha actual
+                    else {
+                        observationDate = new Date().toLocaleDateString();
+                    }
+
+                    // Crear el HTML para mostrar cada observación
+                    const observationHTML = `
+                        <div class="observation">
+                            <p><strong>Fecha:</strong> ${observationDate}</p>
+                            <p><strong>Observación:</strong> ${observationText}</p>
+                        </div>
+                    `;
+                    // Agregar la observación al contenedor
+                    observationContainer.insertAdjacentHTML('beforeend', observationHTML);
+                });
+            }else {
+                // Mostrar un mensaje indicando que no hay observaciones disponibles
+                const noObservationsHTML = `
+                    <div class="no-observations">
+                        <p>No se encontraron observaciones para este paciente.</p>
+                    </div>
+                `;
+                observationContainer.insertAdjacentHTML('beforeend', noObservationsHTML);
+            
+            }
+            })
+            .catch(error => {
+                console.error('Error al consultar las observaciones del paciente:', error);
+                // Mostrar un mensaje de error al usuario
+                alert('Ha ocurrido un error al recuperar las observaciones del paciente.');
+            });
+    }
+    
+
+
+
+
+
+
+
+        
+
 });
