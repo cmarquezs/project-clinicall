@@ -221,8 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p><strong>Zona Territorial:</strong> ${patientZonaTerritorial ? patientZonaTerritorial : 'No especificado'}</p>
                         <p><strong>Entidad Respondiente:</strong> ${patientEntidadRespondiente ? patientEntidadRespondiente : 'No especificado'}</p>
                     </div>
-                    <button type="button" class="btn btn-primary" id="editHistoryButton">Editar historia</button>
                     </div>
+                    <button type="button" class="btn btn-primary" id="editHistoryButton">Editar historia</button>
+                    
                 `;
                 patientInfoDiv.innerHTML += patientDetailsHTML;
 
@@ -254,43 +255,46 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('editPatientForm').addEventListener('submit', async function(event) {
         event.preventDefault();
     
-        // Obtener el número de identificación del paciente
         const patientDNIConsult = document.getElementById('patientDNIConsult').value.trim();
-    
-        // Verificar que el campo de número de identificación no esté vacío
         if (!patientDNIConsult) {
             alert('Por favor, ingrese el número de identificación del paciente.');
             return;
         }
     
-        // Obtener el valor de la observación
         const observationText = document.getElementById('observationPatient').value.trim();
-    
-        // Verificar que el campo de observación no esté vacío
         if (!observationText) {
             alert('Por favor, ingrese una observación.');
             return;
         }
     
-        // Crear un objeto FHIR Observation
-        const observation = {
-            resourceType: 'Observation',
-            status: 'final',
-            code: {
-                coding: [{
-                    system: 'http://loinc.org',
-                    code: '34109-9',
-                    display: 'Note'
-                }]
-            },
-            subject: {
-                reference: `Patient?identifier=${patientDNIConsult}` // Utilizar el número de identificación del paciente
-            },
-            valueString: observationText
-        };
-    
-        // Enviar el objeto Observation al servidor FHIR
         try {
+            // Obtener los detalles del paciente utilizando el número de identificación
+            const patientResponse = await fetch(`http://localhost:8080/fhir/Patient?identifier=${patientDNIConsult}`);
+            if (!patientResponse.ok) {
+                throw new Error('No se pudo encontrar el paciente');
+            }
+            const patientData = await patientResponse.json();
+            const patientId = patientData.entry[0].resource.id;
+    
+            // Crear un objeto Observation en FHIR
+            const observation = {
+                resourceType: 'Observation',
+                status: 'final',
+                code: {
+                    coding: [{
+                        system: 'http://loinc.org',
+                        code: '34109-9',
+                        display: 'Note'
+                    }]
+                },
+                subject: {
+                    reference: `Patient/${patientId}`
+                },
+                valueString: observationText,
+                effectiveDateTime: new Date().toISOString()
+            };
+    
+            // Enviar la observación al servidor FHIR
             const response = await fetch('http://localhost:8080/fhir/Observation', {
                 method: 'POST',
                 headers: {
@@ -300,17 +304,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     
             if (response.ok) {
-                console.log('Observation created:', observation);
+                const observationData = await response.json();
+                console.log('Observation created:', observationData);
                 alert('La observación se ha guardado correctamente.');
+                document.getElementById('observationPatient').value = ''; 
+                document.getElementById('editPatientFormContainer').classList.add('d-none');
+                //displayPatientInfo(data);
+
             } else {
-                console.error('Error creating Observation:', response);
-                alert('Ha ocurrido un error al guardar la observación.');
+                const errorText = await response.text();
+                console.error('Error creating Observation:', errorText || response.statusText);
+                alert(`Ha ocurrido un error al guardar la observación: ${errorText || response.statusText}`);
             }
         } catch (error) {
             console.error('Error creating Observation:', error);
             alert('Ha ocurrido un error al guardar la observación.');
         }
     });
+    
+    
 
 
     function displayObservations(patientId) {

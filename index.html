@@ -112,6 +112,9 @@
                             <div class="card-body" id="patientInfo">
                                 <!-- Aquí se insertarán los detalles del paciente -->
                             </div>
+                            <div class="card-header bg-primary text-white">
+                                Detalles Historia Clínica
+                            </div>
                             <div class="card-body" id="observationContainer">
                                 <!-- Aquí se insertarán las observaciones del paciente -->
                             </div>
@@ -120,14 +123,21 @@
                     
                     <!-- Formulario de edición de historia clínica -->
                     <div id="editPatientFormContainer" class="container d-none">
-                        <h1 class="text-center">Editar Historia Clínica</h1>
+                        <h1 class="text-center">Agregar Información - Historia Clínica</h1>
                         <form id="editPatientForm">
-                            <!-- Aquí puedes agregar los campos para editar la historia clínica -->
+                            <!-- Campos para editar la historia clínica -->
                             <div class="form-group">
                                 <label for="observationPatient">Observaciones:</label>
-                                <textarea class="form-control" id="observationPatient" name="observationPatient"></textarea>
+                                <textarea class="form-control" id="observationPatient" name="observationPatient" placeholder="Ingrese las observaciones del paciente"></textarea>
                             </div>
-                            <!-- Agrega más campos según sea necesario -->
+                            <!-- <div class="form-group">
+                                <label for="medicationsPatient">Medicamentos:</label>
+                                <input type="text" class="form-control" id="medicationsPatient" name="medicationsPatient" placeholder="Ingrese los medicamentos del paciente">
+                            </div>
+                            <div class="form-group">
+                                <label for="conditionsPatient">Condiciones:</label>
+                                <input type="text" class="form-control" id="conditionsPatient" name="conditionsPatient" placeholder="Ingrese las condiciones del paciente">
+                            </div> -->
                             <button type="submit" class="btn btn-primary">Guardar </button>
                             
                         </form>
@@ -279,9 +289,6 @@
         </div>
     </div>
     <script src="/js/dashboard_medico.js"></script>
-    <script>
-        
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 </body>
