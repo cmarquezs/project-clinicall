@@ -4,8 +4,11 @@ FROM nginx:alpine
 # Copia los archivos del proyecto al directorio predeterminado de Nginx
 COPY . /usr/share/nginx/html
 
-# Exponer el puerto 80
-EXPOSE 80
+# Copiar configuración personalizada de Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Exponer el puerto 8888
+EXPOSE 8888
 
 # Comando por defecto para ejecutar Nginx
 CMD ["nginx", "-g", "daemon off;"]
